@@ -4,14 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1d3605d3-7e6f-43cf-ad8f-3195cbb1393f" name="Changes" comment="" />
+    <list default="true" id="1d3605d3-7e6f-43cf-ad8f-3195cbb1393f" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="docker://Docker:27e6d584ca7def6360722cc10d4a1acc212e6ff4b86cfaff609131f04ed6f790:/opt/airflow/simple_auth_manager_passwords.json.generated" root0="FORCE_HIGHLIGHTING" />
+    <setting file="docker://Docker:f62a6dff8d8ea63169da57c53fbac39add7e51f80b81924b95c416980b453bbd:/app/README.md" root0="FORCE_HIGHLIGHTING" root1="FORCE_HIGHLIGHTING" />
+    <setting file="docker://Docker:f62a6dff8d8ea63169da57c53fbac39add7e51f80b81924b95c416980b453bbd:/app/requirements/base.txt" root0="FORCE_HIGHLIGHTING" />
+    <setting file="docker://Docker:f62a6dff8d8ea63169da57c53fbac39add7e51f80b81924b95c416980b453bbd:/app/setup.py" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectColorInfo"><![CDATA[{
   "customColor": "",
@@ -33,6 +42,7 @@
     "Docker.docker-compose.yml: Compose Deployment.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -42,7 +52,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Docker.docker-compose.yml.airflow: Compose Deployment">
+  <component name="RunManager" selected="Docker.docker-compose.yml.superset: Compose Deployment">
     <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
       <deployment type="docker-compose.yml" />
       <method v="2" />
@@ -114,9 +124,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Docker.docker-compose.yml.superset: Compose Deployment" />
         <item itemvalue="Docker.docker-compose.yml.airflow: Compose Deployment" />
         <item itemvalue="Docker.docker-compose.yml.postgres-airflow: Compose Deployment" />
-        <item itemvalue="Docker.docker-compose.yml.superset: Compose Deployment" />
         <item itemvalue="Docker.docker-compose.yml.trino: Compose Deployment" />
         <item itemvalue="Docker.docker-compose.yml: Compose Deployment" />
       </list>
@@ -129,7 +139,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1750320073368</updated>
-      <workItem from="1750320074581" duration="8383000" />
+      <workItem from="1750320074581" duration="12152000" />
     </task>
     <servers />
   </component>
