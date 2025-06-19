@@ -1,0 +1,238 @@
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-05-24T17-08-30Z # Pinned version
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=minio # Important for S3 path-style access
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - lakehouse-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  spark:
+#    image: apache/spark-py:v3.4.0
+    container_name: spark-master
+    build:
+      context: .
+      dockerfile: ./infra/spark/Dockerfile
+    ports:
+      - "8080:8080"
+      - "4040:4040"
+      - "7077:7077"
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark
+      - SPARK_CONF_DIR=/opt/spark/conf
+    volumes:
+      - ./data:/data
+      - ./spark-jobs:/spark-jobs
+      - ./spark-conf:/opt/spark/conf
+      - ./spark-conf/hadoop-aws-3.3.4.jar:/opt/spark/jars/hadoop-aws-3.3.4.jar
+    networks:
+      - lakehouse-network
+    depends_on:
+      minio:
+        condition: service_healthy
+#      hive-metastore:
+#        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  spark-worker:
+#    image: apache/spark-py:v3.4.0
+    container_name: spark-worker
+    build:
+      context: .
+      dockerfile: ./infra/spark/Dockerfile
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=512m
+      - SPARK_CONF_DIR=/opt/spark/conf
+    volumes:
+      - ./data:/data
+      - ./spark-jobs:/spark-jobs
+      - ./spark-conf:/opt/spark/conf
+      - ./spark-conf/hadoop-aws-3.3.4.jar:/opt/spark/jars/hadoop-aws-3.3.4.jar
+    networks:
+      - lakehouse-network
+    depends_on:
+      spark:
+        condition: service_healthy
+#      hive-metastore:
+#        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://spark:8080" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  trino:
+    image: trinodb/trino:434 # Pinned version
+    container_name: trino
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./trino-config/catalog/delta.properties:/etc/trino/catalog/delta.properties
+    networks:
+      - lakehouse-network
+    depends_on:
+      minio:
+        condition: service_healthy
+#      hive-metastore:
+#        condition: service_healthy
+    environment:
+      - JAVA_OPTS=-Xmx2g
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:latest # Pinned version (16.9)
+    container_name: postgres-hive
+    environment:
+      - POSTGRES_USER=hive
+      - POSTGRES_PASSWORD=hivepassword
+      - POSTGRES_DB=hive
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - postgres-hive-data:/var/lib/postgresql/data
+    ports:
+      - "55432:5432"
+    networks:
+      - lakehouse-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  hive-metastore:
+    image: apache/hive:4.0.1
+    container_name: hive-metastore
+    ports:
+      - "9083:9083"
+    environment:
+      - SERVICE_NAME=metastore
+      - HIVE_METASTORE_JDBC_URL=jdbc:postgresql://postgres:5432/hive
+      - HIVE_METASTORE_JDBC_DRIVER=org.postgresql.Driver
+      - HIVE_METASTORE_JDBC_USER=hive
+      - HIVE_METASTORE_JDBC_PASSWORD=hivepassword
+    volumes:
+      - ./hive-config:/opt/hive/conf
+      - ./hive-config/postgresql-42.7.4.jar:/opt/hive/lib/postgresql-42.7.4.jar
+    networks:
+      - lakehouse-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "9083" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  airflow:
+    image: apache/airflow:3.0.2-python3.11  # Pin version cụ thể
+    container_name: airflow
+    ports:
+      - "8082:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__FERNET_KEY=your_fernet_key_here  # Generate với: `openssl rand -base64 32`
+      - AIRFLOW__WEBSERVER__SECRET_KEY=your_webserver_secret_key
+      - AIRFLOW__API__AUTH_BACKEND=airflow.api.auth.backend.basic_auth
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./airflow-config:/opt/airflow/config
+    networks:
+      - lakehouse-network
+    depends_on:
+      postgres-airflow: # Thêm dependency vào PostgreSQL
+        condition: service_healthy
+      spark:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: >
+      bash -c "
+      airflow standalone
+      "
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s  # Thêm thời gian khởi tạo
+  
+  postgres-airflow:
+    image: postgres:16.3
+    container_name: postgres-airflow
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    volumes:
+      - postgres-airflow-data:/var/lib/postgresql/data
+    networks:
+      - lakehouse-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+ 
+  superset:
+    image: apache/superset:5.0.0rc4-py310 # Pinned version
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=your-secret-key
+      - SUPERSET_CONFIG_PATH=/app/superset_config.py
+    volumes:
+      - ./superset-config/superset_config.py:/app/superset_config.py
+    networks:
+      - lakehouse-network
+    depends_on:
+      trino:
+        condition: service_healthy
+    command: >
+      bash -c "/app/docker/docker-init.sh && superset run -p 8088 --with-threads --reload --debugger"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  minio-data:
+  postgres-hive-data:
+  postgres-airflow-data:
+
+networks:
+  lakehouse-network:
+    driver: bridge
