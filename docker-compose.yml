@@ -33,15 +33,14 @@ services:
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
-#      - SPARK_CONF_DIR=/opt/bitnami/spark/conf
+      - SPARK_JARS_IVY=/opt/bitnami/spark/ivy2
     volumes:
       - ./data:/data
+      - ./spark-conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./spark-conf/core-site.xml:/opt/bitnami/spark/conf/core-site.xml
       - ./spark-jobs:/spark-jobs
-#      - ./spark-conf:/opt/bitnami/spark/conf
-#      - ./spark-conf/hadoop-aws-3.3.4.jar:/opt/bitnami/spark/jars/hadoop-aws-3.3.4.jar
-      - ./spark-conf/delta-core_2.12-2.4.0.jar:/opt/bitnami/spark/jars/delta-core_2.12-2.4.0.jar
-      - ./spark-conf/delta-storage-2.4.0.jar:/opt/bitnami/spark/jars/delta-storage-2.4.0.jar
-      - ./spark-ivy-cache:/opt/bitnami/spark/.ivy2  # Thêm dòng này
+#      - ./spark-conf/hadoop-aws-3.3.6.jar:/opt/bitnami/spark/jars/hadoop-aws-3.3.6.jar
+#      - ./spark-conf/delta-spark_2.13-4.0.0.jar:/opt/bitnami/spark/jars/delta-spark_2.13-4.0.0.jar
     networks:
       - lakehouse-network
     depends_on:
@@ -66,15 +65,14 @@ services:
       - SPARK_MASTER_URL=spark://spark:7077
       - SPARK_WORKER_CORES=1
       - SPARK_WORKER_MEMORY=512m
-#      - SPARK_CONF_DIR=/opt/bitnami/spark/conf
+      - SPARK_JARS_IVY=/opt/bitnami/spark/ivy2
     volumes:
       - ./data:/data
       - ./spark-jobs:/spark-jobs
-#      - ./spark-conf:/opt/bitnami/spark/conf
-      - ./spark-ivy-cache:/opt/bitnami/spark/.ivy2  # Thêm dòng này
-#      - ./spark-conf/hadoop-aws-3.3.4.jar:/opt/bitnami/spark/jars/hadoop-aws-3.3.4.jar
-      - ./spark-conf/delta-core_2.12-2.4.0.jar:/opt/bitnami/spark/jars/delta-core_2.12-2.4.0.jar
-      - ./spark-conf/delta-storage-2.4.0.jar:/opt/bitnami/spark/jars/delta-storage-2.4.0.jar
+      - ./spark-conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./spark-conf/core-site.xml:/opt/bitnami/spark/conf/core-site.xml
+#      - ./spark-conf/hadoop-aws-3.3.6.jar:/opt/bitnami/spark/jars/hadoop-aws-3.3.6.jar
+#      - ./spark-conf/delta-spark_2.13-4.0.0.jar:/opt/bitnami/spark/jars/delta-spark_2.13-4.0.0.jar
     networks:
       - lakehouse-network
     depends_on:
